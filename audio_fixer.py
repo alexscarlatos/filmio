@@ -6,6 +6,7 @@ def get_all_files_of_type(cur_dir, ext):
     return [path.join(cur_dir, f) for f in listdir(cur_dir) if path.isfile(path.join(cur_dir, f)) and f.lower().endswith(ext.lower())]
 
 def get_out_file_path(input_file, out_dir, suffix='', new_type=None):
+    # TODO: just copy over filename not directory
     input_file_parts = input_file.rsplit('.', 1)
     output_filename = "{}{}.{}".format(input_file_parts[0], suffix, new_type or input_file_parts[1])
     return "{}/{}".format(out_dir, output_filename)
@@ -15,7 +16,7 @@ def get_out_file_path(input_file, out_dir, suffix='', new_type=None):
 class AudioFixer:
     def __init__(self, source_dir, out_dir, verbose):
         self.source_dir = source_dir
-        # TODO: if out_dir doesn't exist, create it (if needed)
+        # TODO: if out_dir doesn't exist, create it
         self.out_dir = out_dir
         self.verbose = verbose
         self._src_audio_files = None
@@ -23,8 +24,11 @@ class AudioFixer:
         self._video_files = None
         self._video_audio_extracted = False
         self._gain = None
-        
+
     def overrideSrcAudioFiles(self, audio_files):
+        '''
+        Set the list of source audio files to use rather than calculate it
+        '''
         if type(audio_files) is list:
             self._src_audio_files = audio_files
 
@@ -34,13 +38,23 @@ class AudioFixer:
             self._new_audio_files = audio_files
 
     def overrideSrcVideoFiles(self, video_files):
+        '''
+        Set the list of source video files to use rather than calculate it
+        '''
         if type(video_files) is list:
-            self._video_files = [{'video': f for f in video_files}]
+            self._video_files = [{'video': f} for f in video_files]
 
     def overrideGain(self, gain):
+        '''
+        Set the gain to use rather than calculate it
+        '''
         self._gain = gain
 
     def srcAudioFiles(self):
+        '''
+        If the source audio file list is already set, return it
+        Otherwise, gather file list from source directory and return
+        '''
         if self._src_audio_files is not None:
             return self._src_audio_files
 
@@ -49,6 +63,10 @@ class AudioFixer:
         return self._src_audio_files
 
     def newAudioFiles(self):
+        '''
+        If new audio file list is already set, return it
+        Otherwise, copy and louden the source audio files and return the new list
+        '''
         if self._new_audio_files is not None:
             return self._new_audio_files
 
@@ -56,6 +74,10 @@ class AudioFixer:
         return self._new_audio_files
 
     def videoFiles(self):
+        '''
+        If video file list is already set, return it
+        Otherwise, gather files from source directory and return
+        '''
         if self._video_files is not None:
             return self._video_files
 
@@ -64,6 +86,10 @@ class AudioFixer:
         return self._video_files
 
     def gain(self):
+        '''
+        If gain is already set, return it
+        Otherwise, calculate gain from srcAudioFiles and return
+        '''
         if self._gain is not None:
             return self._gain
 
@@ -79,6 +105,11 @@ class AudioFixer:
         return self._gain
 
     def loudenAudio(self):
+        '''
+        Sets newAudioFiles
+        Creates a copy of each file in srcAudioFiles
+        If gain != 1 then applies gain to each copied file
+        '''
         if self.gain() == 1:
             print("Gain is 1... will copy audio files but not adjust volume")
         else:
@@ -145,7 +176,6 @@ class AudioFixer:
             # TODO: convert samples to seconds
             start_time = best_match.start_sample
             end_time = best_match.end_sample
-            duration = end_time - start_time
             if self.verbose:
                 print("\t{0} matched with {1}, with {1} starting at {2} and ending at {3}"
                     .format(video_audio_file, best_audio_file, start_time, end_time))

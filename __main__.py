@@ -28,8 +28,8 @@ if __name__ == "__main__":
         help='Print extra information while executing.')
     parser.add_argument('-d', '--src_dir', default='.',
         help='Directory to search for source files. Default is the current directory.')
-    parser.add_argument('-o', '--out_dir', default='.',
-        help='Directory to place output files. Default is the current directory.')
+    parser.add_argument('-o', '--out_dir', default='./Fixed',
+        help='Directory to place output files. Default is subdir of the current directory "./Fixed"')
 
     # TODO: might want to combine these into one argument with a choice
     parser.add_argument('-c', '--calc', action='store_true',

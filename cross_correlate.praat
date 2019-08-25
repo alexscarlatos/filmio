@@ -20,4 +20,3 @@ Cross-correlate: "peak 0.99", "zero"
 offset = Get time of maximum: 0, 0, "Sinc70"
 
 writeInfoLine: 'offset'
-
