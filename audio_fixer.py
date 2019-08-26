@@ -1,13 +1,16 @@
-from os import listdir, path
-from audio_util import get_max_gain, louder, extract_audio, match, trim, MatchTuple, PRAAT_PATH
+from os import listdir, path, makedirs
+from audio_util import get_max_gain, louder, extract_audio, match, trim, attach, MatchTuple, PRAAT_PATH
 from shutil import copyfile
 
-def get_all_files_of_type(cur_dir, ext):
-    return [path.join(cur_dir, f) for f in listdir(cur_dir) if path.isfile(path.join(cur_dir, f)) and f.lower().endswith(ext.lower())]
+def get_all_files_of_type_in_list(file_list, ext):
+    return [f for f in file_list if f.lower().endswith(ext.lower())]
+
+def get_all_files_of_type_in_dir(cur_dir, ext):
+    file_list = (path.join(cur_dir, f) for f in listdir(cur_dir) if path.isfile(path.join(cur_dir, f)))
+    return get_all_files_of_type_in_list(file_list, ext)
 
 def get_out_file_path(input_file, out_dir, suffix='', new_type=None):
-    # TODO: just copy over filename not directory
-    input_file_parts = input_file.rsplit('.', 1)
+    input_file_parts = path.basename(input_file).rsplit('.', 1)
     output_filename = "{}{}.{}".format(input_file_parts[0], suffix, new_type or input_file_parts[1])
     return "{}/{}".format(out_dir, output_filename)
 
@@ -16,33 +19,34 @@ def get_out_file_path(input_file, out_dir, suffix='', new_type=None):
 class AudioFixer:
     def __init__(self, source_dir, out_dir, verbose):
         self.source_dir = source_dir
-        # TODO: if out_dir doesn't exist, create it
+        makedirs(out_dir, exist_ok=True) # Create out_dir if it doesn't already exist
         self.out_dir = out_dir
         self.verbose = verbose
+
         self._src_audio_files = None
         self._new_audio_files = None
         self._video_files = None
         self._video_audio_extracted = False
         self._gain = None
 
+        # List of tuples (audio_file, video_file, MatchTuple)
+        self._matches = None
+
+        # List of tuples (audio_file, video_file)
+        self._matches_trimmed = None
+
     def overrideSrcAudioFiles(self, audio_files):
         '''
         Set the list of source audio files to use rather than calculate it
         '''
-        if type(audio_files) is list:
-            self._src_audio_files = audio_files
-
-    # TODO: is this function necessary?
-    def overrideNewAudioFiles(self, audio_files):
-        if type(audio_files) is list:
-            self._new_audio_files = audio_files
+        # TODO: after initial list is retrieved, convert any 24-bit wav files
+        self._src_audio_files = get_all_files_of_type_in_list(audio_files, '.wav')
 
     def overrideSrcVideoFiles(self, video_files):
         '''
         Set the list of source video files to use rather than calculate it
         '''
-        if type(video_files) is list:
-            self._video_files = [{'video': f} for f in video_files]
+        self._video_files = [{'video': f} for f in get_all_files_of_type_in_list(video_files, '.mp4')]
 
     def overrideGain(self, gain):
         '''
@@ -59,7 +63,7 @@ class AudioFixer:
             return self._src_audio_files
 
         print("Gathering audio files...")
-        self._src_audio_files = get_all_files_of_type(self.source_dir, '.wav')
+        self._src_audio_files = get_all_files_of_type_in_dir(self.source_dir, '.wav')
         return self._src_audio_files
 
     def newAudioFiles(self):
@@ -82,7 +86,7 @@ class AudioFixer:
             return self._video_files
 
         print("Gathering video files...")
-        self._video_files = [{'video': f} for f in get_all_files_of_type(self.source_dir, '.mp4')]
+        self._video_files = [{'video': f} for f in get_all_files_of_type_in_dir(self.source_dir, '.mp4')]
         return self._video_files
 
     def gain(self):
@@ -107,53 +111,58 @@ class AudioFixer:
     def loudenAudio(self):
         '''
         Sets newAudioFiles
-        Creates a copy of each file in srcAudioFiles
-        If gain != 1 then applies gain to each copied file
+        Creates a copy of each file in srcAudioFiles and applies gain
+        If gain == 1 then skips copying and just assigns newAudioFiles to srcAudioFiles
         '''
         if self.gain() == 1:
-            print("Gain is 1... will copy audio files but not adjust volume")
-        else:
-            print("Scaling volume of audio files by {}...".format(self.gain()))
-        
+            print("Gain is 1... no loudening needed")
+            self._new_audio_files = self.srcAudioFiles()
+            return
+
+        print("Scaling volume of audio files by {}...".format(self.gain()))
+
         self._new_audio_files = []
         for audio_file in self.srcAudioFiles():
             if self.verbose:
                 print("\t{}".format(audio_file))
             new_audio_filepath = get_out_file_path(audio_file, self.out_dir, suffix='_louder')
 
-            if self.gain() == 1:
-                copyfile(audio_file, new_audio_filepath)
+            if louder(audio_file, new_audio_filepath, self.gain()):
                 self._new_audio_files.append(new_audio_filepath)
-            else:
-                if louder(audio_file, new_audio_filepath, self.gain()):
-                    self._new_audio_files.append(new_audio_filepath)
 
         if self.verbose:
             print("Louder audio files:\n\t" + "\n\t".join(self._new_audio_files) + "\n")
 
     def extractAudioFromVideo(self):
+        '''
+        TODO
+        '''
         print("Extracting audio for each video file...")
         for video_tup in self.videoFiles():
             video_file = video_tup['video']
             if self.verbose:
                 print("\t{}".format(video_file))
-            
+
             video_audio_file = get_out_file_path(video_file, self.out_dir, new_type='wav')
             if extract_audio(video_file, video_audio_file, self.verbose):
                 video_tup['audio'] = video_audio_file
             else:
                 print("Couldn't extract audio from " + video_file)
-        
+
         print("Audio from video files extracted!")
         self._video_audio_extracted = True
 
     def matchVideoToAudio(self):
+        '''
+        TODO
+        '''
         if not self._video_audio_extracted:
             self.extractAudioFromVideo()
-        
+
         # Do matching, trimming and attaching for each video file
         print("Finding best match for video files...")
         patched_video_files = []
+        self._matches = []
         for video_tup in self.videoFiles():
             video_file = video_tup['video']
             if 'audio' not in video_tup:
@@ -168,29 +177,35 @@ class AudioFixer:
             best_match = MatchTuple(0, 0, 0)
             for audio_file in self.newAudioFiles():
                 cur_match = match(audio_file, video_audio_file)
-                if cur_match.score > best_match.score:
+                if cur_match and cur_match.score > best_match.score:
                     best_match = cur_match
                     best_audio_file = audio_file
 
-            # Calculate the necessary times for stitching
-            # TODO: convert samples to seconds
-            start_time = best_match.start_sample
-            end_time = best_match.end_sample
-            if self.verbose:
-                print("\t{0} matched with {1}, with {1} starting at {2} and ending at {3}"
-                    .format(video_audio_file, best_audio_file, start_time, end_time))
+            if best_audio_file:
+                self._matches.append((best_audio_file, video_file, best_match))
+                if self.verbose:
+                    print("\t{0} matched with {1}, with {1} starting at {2} and ending at {3}"
+                        .format(video_audio_file, best_audio_file, best_match.start_time, best_match.end_time))
+            else:
+                print("\tNo match found for", video_audio_file)
+
+            # TODO: separate out the matching, trimming and patching steps
 
             # Trim audio file based on match output
-            trimmed_audio_file = get_out_file_path(best_audio_file, out_dir, suffix='_trimmed')
-            if not trim(best_audio_file, trimmed_audio_file, start_time, end_time):
+            if self.verbose:
+                print("Trimming matched audio file", best_audio_file)
+            trimmed_audio_file = get_out_file_path(best_audio_file, self.out_dir, suffix='_trimmed')
+            if not trim(best_audio_file, trimmed_audio_file, best_match.start_time, best_match.end_time):
                 print("\tCouldn't trim {}".format(best_audio_file))
                 continue
             elif self.verbose:
                 print("\tAudio trimmed to {}".format(trimmed_audio_file))
 
             # Finally, attach the trimmed audio file to the video file
-            patched_video_file = get_out_file_path(video_file, out_dir, suffix='_patched')
+            if self.verbose:
+                print("Attaching {} to {}".format(best_audio_file, video_file))
+            patched_video_file = get_out_file_path(video_file, self.out_dir, suffix='_patched')
             if attach(best_audio_file, video_file, patched_video_file):
                 patched_video_files.append(patched_video_file)
-            
+
         print("Created patched video files:" + "\n".join(patched_video_files))

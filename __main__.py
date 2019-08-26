@@ -47,14 +47,16 @@ if __name__ == "__main__":
         help='Perform operations only on the provided files, rather than searching the source directory. Not available for audio/video matching.')
 
     args = parser.parse_args()
-    
+
     # Create worker class
     audioFixer = AudioFixer(args.src_dir, args.out_dir, args.verbose)
 
-    # Set overrides (if not provided, will be None and this will be a no-op)
-    audioFixer.overrideGain(args.gain)
-    audioFixer.overrideSrcAudioFiles(args.files)
-    audioFixer.overrideSrcVideoFiles(args.files)
+    # Set overrides
+    if args.gain is not None:
+        audioFixer.overrideGain(args.gain)
+    if args.files is not None:
+        audioFixer.overrideSrcAudioFiles(args.files)
+        audioFixer.overrideSrcVideoFiles(args.files)
 
     # Decide on action based on provided arguments
     if args.calc:
