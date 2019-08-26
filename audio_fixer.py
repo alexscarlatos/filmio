@@ -203,9 +203,9 @@ class AudioFixer:
 
             # Finally, attach the trimmed audio file to the video file
             if self.verbose:
-                print("Attaching {} to {}".format(best_audio_file, video_file))
+                print("Attaching {} to {}".format(trimmed_audio_file, video_file))
             patched_video_file = get_out_file_path(video_file, self.out_dir, suffix='_patched')
-            if attach(best_audio_file, video_file, patched_video_file):
+            if attach(trimmed_audio_file, video_file, patched_video_file):
                 patched_video_files.append(patched_video_file)
 
         print("Created patched video files:" + "\n".join(patched_video_files))

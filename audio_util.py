@@ -166,7 +166,7 @@ def apply_trim_to_data(start_time, end_time, data, fs):
 
     # TODO: can optimize, proabably only have to reassign data once
 
-    # TODO: assuming 2 channels, is that okay?
+    # TODO: second arg to zeros should be from shape of data
 
     # Convert seconds to samples
     start_sample = int(round(start_time * fs))
@@ -210,7 +210,3 @@ def attach(audio_file, video_file, output_video_file):
     ]
     rc = subprocess.call(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     return rc == 0
-
-if __name__ == "__main__":
-    pass
-    #attach('Fixed/')

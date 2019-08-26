@@ -3,8 +3,6 @@ from os import path
 from audio_fixer import AudioFixer
 from audio_util import PRAAT_PATH
 
-fixed_dir = "./Fixed"
-
 def check_dependencies():
     res = True
 
