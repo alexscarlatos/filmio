@@ -73,17 +73,11 @@ def modify_wav_file(input_file, output_file, data_processor):
         print("\tERR: Couldn't read data: {}".format(e))
         return False
 
-    # TODO: verbose
-    dtype = str(data.dtype)
-    if True:
-        print("\tsample rate: {}".format(fs))
-        print("\tnum samples: {}".format(len(data)))
-        print("\tdata format: {}".format(dtype))
-
     # Process the samples
     data = data_processor(data, fs)
 
     # Make sure dtype doesn't change since this can happen with certain operations
+    dtype = str(data.dtype)
     data = np.asarray(data, dtype)
 
     # Copy audio_file to new_audio_file
@@ -129,10 +123,8 @@ def get_audio_len(audio_file):
 # Return MatchTuple
 def match(ext_audio_file, video_audio_file):
     # Call Praat to do the matching
-    # TODO: add verbosity
     # TODO: 30 second limit should be configurable
-    # TODO: get Praat to output some kind of match score
-    # Note that order matters here
+    # Note that file order matters here
     cmd = [PRAAT_PATH, 'cross_correlate.praat', video_audio_file, ext_audio_file]
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out, err = p.communicate()
@@ -146,8 +138,7 @@ def match(ext_audio_file, video_audio_file):
     try:
         parts = out_str.split(' ')
         offset = float(parts[0])
-        score = 100
-        # score = float(parts[1])
+        score = float(parts[1])
     except Exception as e:
         print('Error parsing Praat output:', e)
         return None
@@ -157,16 +148,13 @@ def match(ext_audio_file, video_audio_file):
     start_time = offset
     end_time = start_time + vid_audio_len
 
-    print(start_time, end_time)
-
     return MatchTuple(start_time, end_time, score)
 
 def apply_trim_to_data(start_time, end_time, data, fs):
     data_len = len(data)
+    num_channels = len(data.shape)
 
     # TODO: can optimize, proabably only have to reassign data once
-
-    # TODO: second arg to zeros should be from shape of data
 
     # Convert seconds to samples
     start_sample = int(round(start_time * fs))
@@ -174,14 +162,16 @@ def apply_trim_to_data(start_time, end_time, data, fs):
 
     # Add silence or trim beginning of clip
     if start_sample < 0:
-        starting_silence = np.zeros((start_sample * -1, 2), data.dtype)
+        shape = (start_sample * -1, 2) if num_channels == 2 else (start_sample * -1)
+        starting_silence = np.zeros(shape, data.dtype)
         data = np.concatenate((starting_silence, data), axis=0)
     else:
         data = data[start_sample:]
 
     # Add silence or trim end of clip
     if end_sample > data_len:
-        ending_silence = np.zeros((end_sample - data_len, 2), data.dtype)
+        shape = (end_sample - data_len, 2) if num_channels == 2 else (end_sample - data_len)
+        ending_silence = np.zeros(shape, data.dtype)
         data = np.concatenate((data, ending_silence), axis=0)
     else:
         data = data[:(end_sample - start_sample)]

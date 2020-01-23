@@ -1,6 +1,5 @@
 from os import listdir, path, makedirs
 from audio_util import get_max_gain, louder, extract_audio, match, trim, attach, MatchTuple, PRAAT_PATH
-from shutil import copyfile
 
 def get_all_files_of_type_in_list(file_list, ext):
     return [f for f in file_list if f.lower().endswith(ext.lower())]
@@ -140,10 +139,10 @@ class AudioFixer:
         print("Extracting audio for each video file...")
         for video_tup in self.videoFiles():
             video_file = video_tup['video']
-            if self.verbose:
-                print("\t{}".format(video_file))
-
             video_audio_file = get_out_file_path(video_file, self.out_dir, new_type='wav')
+            if self.verbose:
+                print("\t{} -> {}".format(video_file, video_audio_file))
+
             if extract_audio(video_file, video_audio_file, self.verbose):
                 video_tup['audio'] = video_audio_file
             else:
@@ -169,7 +168,7 @@ class AudioFixer:
                 print("\tSkipping {} - no audio extracted".format(video_file))
                 continue
             elif self.verbose:
-                print("\t{}".format(video_file))
+                print('\n', video_file) # TODO: for some reason this doesn't print the first time
 
             # Find best audio file to match video file
             video_audio_file = video_tup['audio']
@@ -177,6 +176,8 @@ class AudioFixer:
             best_match = MatchTuple(0, 0, 0)
             for audio_file in self.newAudioFiles():
                 cur_match = match(audio_file, video_audio_file)
+                if self.verbose:
+                    print('\t', audio_file, cur_match)
                 if cur_match and cur_match.score > best_match.score:
                     best_match = cur_match
                     best_audio_file = audio_file
@@ -187,7 +188,7 @@ class AudioFixer:
                     print("\t{0} matched with {1}, with {1} starting at {2} and ending at {3}"
                         .format(video_audio_file, best_audio_file, best_match.start_time, best_match.end_time))
             else:
-                print("\tNo match found for", video_audio_file)
+                print("No match found for", video_audio_file)
 
             # TODO: separate out the matching, trimming and patching steps
 
@@ -196,10 +197,10 @@ class AudioFixer:
                 print("Trimming matched audio file", best_audio_file)
             trimmed_audio_file = get_out_file_path(best_audio_file, self.out_dir, suffix='_trimmed')
             if not trim(best_audio_file, trimmed_audio_file, best_match.start_time, best_match.end_time):
-                print("\tCouldn't trim {}".format(best_audio_file))
+                print("Couldn't trim {}".format(best_audio_file))
                 continue
             elif self.verbose:
-                print("\tAudio trimmed to {}".format(trimmed_audio_file))
+                print("Audio trimmed to {}".format(trimmed_audio_file))
 
             # Finally, attach the trimmed audio file to the video file
             if self.verbose:
@@ -208,4 +209,4 @@ class AudioFixer:
             if attach(trimmed_audio_file, video_file, patched_video_file):
                 patched_video_files.append(patched_video_file)
 
-        print("Created patched video files:" + "\n".join(patched_video_files))
+        print("\nCreated patched video files:\n", "\n".join(patched_video_files))

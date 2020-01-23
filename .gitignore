@@ -1,1 +1,5 @@
 __pycache__
+*.wav
+*.MP4
+*.m4a
+.vscode/

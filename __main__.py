@@ -42,7 +42,7 @@ if __name__ == "__main__":
     parser.add_argument('-g', '--gain', type=float,
         help='Provide a gain to use on the audio files rather than calculating one. If 1 is given, will not attempt to modify audio file volume.')
     parser.add_argument('-f', '--files', nargs='*',
-        help='Perform operations only on the provided files, rather than searching the source directory. Not available for audio/video matching.')
+        help='Perform operations only on the provided files, rather than searching the source directory.')
 
     args = parser.parse_args()
 

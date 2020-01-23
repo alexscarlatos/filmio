@@ -1,0 +1,7 @@
+- separate trimming and patching from -m option
+- automatically detect and convert 24 bit wav files
+- handle long audio files in Praat (don't rely on first 30 seconds containing match point)
+- Praat scores don't seem to be very accurate
+- test out patching multiple video and audio files
+    - will have to make sure that trimmed files are renamed correctly to not collide
+- nice neat executable
