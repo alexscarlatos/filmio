@@ -1,5 +1,5 @@
 from os import listdir, path, makedirs
-from audio_util import get_max_gain, louder, extract_audio, match, trim, attach, MatchTuple, PRAAT_PATH
+from audio_util import get_max_gain, louder, extract_audio, match, trim, attach, MatchTuple
 
 def get_all_files_of_type_in_list(file_list, ext):
     return [f for f in file_list if f.lower().endswith(ext.lower())]
@@ -38,7 +38,6 @@ class AudioFixer:
         '''
         Set the list of source audio files to use rather than calculate it
         '''
-        # TODO: after initial list is retrieved, convert any 24-bit wav files
         self._src_audio_files = get_all_files_of_type_in_list(audio_files, '.wav')
 
     def overrideSrcVideoFiles(self, video_files):
