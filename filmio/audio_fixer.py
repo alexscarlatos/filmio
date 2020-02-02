@@ -1,5 +1,5 @@
 from os import listdir, path, makedirs
-from audio_util import get_max_gain, louder, extract_audio, match, trim, attach, MatchTuple
+from .audio_util import get_max_gain, louder, extract_audio, match, trim, attach, MatchTuple
 
 def get_all_files_of_type_in_list(file_list, ext):
     return [f for f in file_list if f.lower().endswith(ext.lower())]

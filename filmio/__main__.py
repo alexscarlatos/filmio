@@ -1,7 +1,7 @@
 import argparse
 from os import path
-from audio_fixer import AudioFixer
-from audio_util import PRAAT_PATH
+from .audio_fixer import AudioFixer
+from .audio_util import PRAAT_PATH
 
 def check_dependencies():
     res = True
@@ -11,11 +11,9 @@ def check_dependencies():
         res = False
         print('Could not find Praat software in {} (needed for matching audio files). Can be downloaded from http://www.fon.hum.uva.nl/praat/.'.format(PRAAT_PATH))
 
-    # Note: dependent on pip packages numpy and scipy
-
     return res
 
-if __name__ == "__main__":
+def main():
     # Check any dependencies required for operations
     # TODO: maybe don't do this here?
     if not check_dependencies():
@@ -59,11 +57,16 @@ if __name__ == "__main__":
     # Decide on action based on provided arguments
     if args.calc:
         audioFixer.gain()
-    if args.louder:
+    elif args.louder:
         audioFixer.loudenAudio()
-    if args.extract:
+    elif args.extract:
         audioFixer.extractAudioFromVideo()
-    if args.match:
+    elif args.match:
         audioFixer.matchVideoToAudio()
+    else:
+        parser.print_help()
 
     print("All done!")
+
+if __name__ == "__main__":
+    main()

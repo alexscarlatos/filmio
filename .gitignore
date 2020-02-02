@@ -2,4 +2,5 @@ __pycache__
 *.wav
 *.MP4
 *.m4a
+*.egg-info
 .vscode/
