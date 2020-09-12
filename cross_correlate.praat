@@ -10,7 +10,7 @@ Extract part: 0, 60, "no"
 Extract one channel... 1
 sound1 = selected("Sound")
 Open long sound file... 'input_sound_2$'
-Extract part: 0, 60, "no"
+Extract part: 0, 0, "no"
 Extract one channel... 1
 sound2 = selected("Sound")
 

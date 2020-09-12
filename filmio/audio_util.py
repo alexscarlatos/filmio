@@ -123,6 +123,7 @@ def extract_audio(video_file, output_audio_file, verbose=True):
     rc = subprocess.call(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     return rc == 0
 
+# TODO: cache results of this function
 def get_audio_len(audio_file):
     wav_data = read_wav_file(audio_file)
     if not wav_data:
@@ -134,7 +135,8 @@ def get_audio_len(audio_file):
 # Return MatchTuple
 def match(ext_audio_file, video_audio_file):
     # Call Praat to do the matching
-    # TODO: 30 second limit should be configurable
+    # TODO: 30 second limit should be configurable (or maybe not needed)
+    # TODO: fix path below
     # Note that file order matters here
     cmd = [PRAAT_PATH, 'cross_correlate.praat', video_audio_file, ext_audio_file]
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -159,7 +161,12 @@ def match(ext_audio_file, video_audio_file):
     start_time = offset
     end_time = start_time + vid_audio_len
 
-    return MatchTuple(start_time, end_time, score)
+    # Scoring heuristic - if a large part of the video is left silent, it is likely not matched correctly
+    ext_audio_len = get_audio_len(ext_audio_file)
+    silence_time = max(-1 * start_time, 0) + max(end_time - ext_audio_len, 0)
+    silence_ratio = float(silence_time) / vid_audio_len
+
+    return MatchTuple(start_time, end_time, score * (1 - silence_ratio))
 
 def apply_trim_to_data(start_time, end_time, data, rate):
     data_len = len(data)

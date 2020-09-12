@@ -1,4 +1,5 @@
 - option to clean up temporary files (default should be true)
+- make it more clear which options should be run exclusively without the others
 - separate trimming and patching from -m option
     - will have to make sure that trimmed files are renamed correctly to not collide
 - handle long audio files in Praat (don't rely on first 30 seconds containing match point)
