@@ -142,7 +142,7 @@ class AudioFixer:
             if self.verbose:
                 print("\t{} -> {}".format(video_file, video_audio_file))
 
-            if extract_audio(video_file, video_audio_file, self.verbose):
+            if extract_audio(video_file, video_audio_file):
                 video_tup['audio'] = video_audio_file
             else:
                 print("Couldn't extract audio from " + video_file)
@@ -156,18 +156,19 @@ class AudioFixer:
         '''
         if not self._video_audio_extracted:
             self.extractAudioFromVideo()
+        self.newAudioFiles() # Pre-gain audio
 
         # Do matching, trimming and attaching for each video file
         print("Finding best match for video files...")
-        patched_video_files = []
         self._matches = []
         for video_tup in self.videoFiles():
             video_file = video_tup['video']
             if 'audio' not in video_tup:
                 print("\tSkipping {} - no audio extracted".format(video_file))
                 continue
-            elif self.verbose:
-                print('\n', video_file) # TODO: for some reason this doesn't print the first time
+
+            if self.verbose:
+                print(f'\n{video_file}')
 
             # Find best audio file to match video file
             video_audio_file = video_tup['audio']
@@ -183,27 +184,37 @@ class AudioFixer:
 
             if best_audio_file:
                 self._matches.append((best_audio_file, video_file, best_match))
-                if self.verbose:
-                    print("\t{0} matched with {1}, with {1} starting at {2} and ending at {3}"
-                        .format(video_audio_file, best_audio_file, best_match.start_time, best_match.end_time))
+                print("\t{0} matched with {1}, with {1} starting at {2} and ending at {3}"
+                    .format(video_audio_file, best_audio_file, best_match.start_time, best_match.end_time))
             else:
                 print("No match found for", video_audio_file)
 
-            # TODO: separate out the matching, trimming and patching steps
+        print("\nMatched videos to source audio files")
+
+    def patch(self):
+        '''
+        TODO
+        '''
+        self.matchVideoToAudio()
+
+        patched_video_files = []
+        for audio_file, video_file, match_props in self._matches:
+            if self.verbose:
+                print("Trimming matched audio file", audio_file)
 
             # Trim audio file based on match output
-            if self.verbose:
-                print("Trimming matched audio file", best_audio_file)
-            trimmed_audio_file = get_out_file_path(best_audio_file, self.out_dir, suffix='_trimmed')
-            if not trim(best_audio_file, trimmed_audio_file, best_match.start_time, best_match.end_time):
-                print("Couldn't trim {}".format(best_audio_file))
+            # Note that the same audio files may be trimmed multiple times, so they will be overwritten
+            trimmed_audio_file = get_out_file_path(audio_file, self.out_dir, suffix='_trimmed')
+            if not trim(audio_file, trimmed_audio_file, match_props.start_time, match_props.end_time):
+                print(f"Couldn't trim {audio_file}")
                 continue
-            elif self.verbose:
+
+            if self.verbose:
                 print("Audio trimmed to {}".format(trimmed_audio_file))
 
             # Finally, attach the trimmed audio file to the video file
             if self.verbose:
-                print("Attaching {} to {}".format(trimmed_audio_file, video_file))
+                print(f"Attaching {trimmed_audio_file} to {video_file}")
             patched_video_file = get_out_file_path(video_file, self.out_dir, suffix='_patched')
             if attach(trimmed_audio_file, video_file, patched_video_file):
                 patched_video_files.append(patched_video_file)

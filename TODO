@@ -1,16 +1,8 @@
 - option to clean up temporary files (default should be true)
-- make it more clear which options should be run exclusively without the others
-- separate trimming and patching from -m option
-    - will have to make sure that trimmed files are renamed correctly to not collide
-- handle long audio files in Praat (don't rely on first 30 seconds containing match point)
-- Praat scores don't seem to be very accurate
-    - read Praat documentation
-    - try looking at files in the GUI
-- linter
 - unit tests
 - nice neat executable (setuptools)
     - https://packaging.python.org/tutorials/packaging-projects
-    - create license (https://choosealicense.com/) and readme
+    - readme
     - make sure that praat script is included in package
     - Praat
         - could include in package - https://python-packaging.readthedocs.io/en/latest/non-code-files.html

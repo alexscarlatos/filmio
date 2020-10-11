@@ -1,24 +1,8 @@
 import argparse
-from os import path
+import sys
 from .audio_fixer import AudioFixer
-from .audio_util import PRAAT_PATH
-
-def check_dependencies():
-    res = True
-
-    # Check PRAAT
-    if not path.isfile(PRAAT_PATH):
-        res = False
-        print('Could not find Praat software in {} (needed for matching audio files). Can be downloaded from http://www.fon.hum.uva.nl/praat/.'.format(PRAAT_PATH))
-
-    return res
 
 def main():
-    # Check any dependencies required for operations
-    # TODO: maybe don't do this here?
-    if not check_dependencies():
-        exit(1)
-
     parser = argparse.ArgumentParser(description='A super rad utility to help you with audio for your films')
     parser.add_argument('-v', '--verbose', action='store_true',
         help='Print extra information while executing.')
@@ -27,18 +11,11 @@ def main():
     parser.add_argument('-o', '--out_dir', default='./Fixed',
         help='Directory to place output files. Default is subdir of the current directory "./Fixed"')
 
-    # TODO: might want to combine these into one argument with a choice
-    parser.add_argument('-c', '--calc', action='store_true',
-        help='Perform optimal gain calculation on source audio files.')
-    parser.add_argument('-l', '--louder', action='store_true',
-        help='Perform gain adjustment on source audio files. Calculates optimal gain if not provided.')
-    parser.add_argument('-e', '--extract', action='store_true',
-        help='Extract audio from source video files.')
-    parser.add_argument('-m', '--match', action='store_true',
-        help='Perform full matching of audio and video files. Then combine results into new video files.')
+    parser.add_argument('-m', '--mode', choices=['gain_calc', 'louden', 'extract_vid_audio', 'match', 'patch'])
 
     parser.add_argument('-g', '--gain', type=float,
-        help='Provide a gain to use on the audio files rather than calculating one. If 1 is given, will not attempt to modify audio file volume.')
+        help='Provide a gain to use on the audio files rather than calculating one. '
+              'If 1 is given, will not attempt to modify audio file volume.')
     parser.add_argument('-f', '--files', nargs='*',
         help='Perform operations only on the provided files, rather than searching the source directory.')
 
@@ -55,16 +32,21 @@ def main():
         audioFixer.overrideSrcVideoFiles(args.files)
 
     # Decide on action based on provided arguments
-    if args.calc:
-        audioFixer.gain()
-    elif args.louder:
-        audioFixer.loudenAudio()
-    elif args.extract:
-        audioFixer.extractAudioFromVideo()
-    elif args.match:
-        audioFixer.matchVideoToAudio()
-    else:
+    if not args.mode:
         parser.print_help()
+        print("Please provide a mode!")
+        sys.exit(1)
+
+    if args.mode == 'gain_calc':
+        audioFixer.gain()
+    elif args.mode == 'louden':
+        audioFixer.loudenAudio()
+    elif args.mode == 'extract_vid_audio':
+        audioFixer.extractAudioFromVideo()
+    elif args.mode == 'match':
+        audioFixer.matchVideoToAudio()
+    elif args.mode == 'patch':
+        audioFixer.patch()
 
     print("All done!")
 

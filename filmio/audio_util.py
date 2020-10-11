@@ -1,12 +1,12 @@
+from os import path
+from collections import namedtuple
+from functools import partial
+import subprocess
+from wave import Error as WavError
 import numpy as np
 from scipy.io import wavfile
-from wave import Error as WavError
 import wavio
-from collections import namedtuple
-import subprocess
-from functools import partial
-
-PRAAT_PATH = '/Applications/Praat.app/Contents/MacOS/Praat'
+import parselmouth
 
 FLOAT_SAMPWIDTH = -1
 
@@ -18,11 +18,11 @@ MatchTuple = namedtuple('MatchTuple', ['start_time', 'end_time', 'score'])
 def dtype_to_sampwidth(dtype):
     if str(dtype).startswith('float'):
         return FLOAT_SAMPWIDTH
-    elif dtype == np.int8:
+    if dtype == np.int8:
         return 1
-    elif dtype == np.int16:
+    if dtype == np.int16:
         return 2
-    elif dtype == np.int32:
+    if dtype == np.int32:
         return 4
     return 0
 
@@ -63,7 +63,7 @@ def get_max_gain(audio_file, verbose=True):
     # Get data format to find the maximum possible gain
     if sampwidth == FLOAT_SAMPWIDTH:
         max_value = 1
-    elif sampwidth >= 1 and sampwidth <= 4:
+    elif 1 <= sampwidth <= 4:
         bits_per_sample = 8 * sampwidth
         max_value = 2 ** bits_per_sample
     else:
@@ -115,9 +115,7 @@ def louder(audio_file, new_audio_file, scale):
 
 # Extract the audio of the given video file and place in output_audio_file
 # Return True for success and False for failure
-def extract_audio(video_file, output_audio_file, verbose=True):
-    # TODO: divert stdout unless verbose
-    # TODO: force overwrite of files
+def extract_audio(video_file, output_audio_file):
     # TODO: should we do 32 bit instead?
     cmd = ['ffmpeg', '-i', video_file, '-map', '0:1', '-acodec', 'pcm_s16le', '-ar', '44100', '-ac', '2', '-y', output_audio_file]
     rc = subprocess.call(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -135,17 +133,8 @@ def get_audio_len(audio_file):
 # Return MatchTuple
 def match(ext_audio_file, video_audio_file):
     # Call Praat to do the matching
-    # TODO: 30 second limit should be configurable (or maybe not needed)
-    # TODO: fix path below
-    # Note that file order matters here
-    cmd = [PRAAT_PATH, 'cross_correlate.praat', video_audio_file, ext_audio_file]
-    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    out, err = p.communicate()
-    if err:
-        print('Error from Praat:', err)
-        return None
-
-    out_str = out.decode('utf-8').strip()
+    praat_path = path.join(path.dirname(__file__), 'cross_correlate.praat')
+    out_str = parselmouth.praat.run_file(praat_path, video_audio_file, ext_audio_file, 0, 60, capture_output=True)[1]
 
     # Get offset and score from process output
     try:
@@ -206,7 +195,6 @@ def trim(audio_file, output_audio_file, start_time, end_time):
 
 # Attach the audio file to the video file and write to new file
 def attach(audio_file, video_file, output_video_file):
-    # TODO: verbosity
     cmd = [
         'ffmpeg',
         '-i', video_file,
