@@ -31,12 +31,12 @@ def main():
         audioFixer.overrideSrcAudioFiles(args.files)
         audioFixer.overrideSrcVideoFiles(args.files)
 
-    # Decide on action based on provided arguments
     if not args.mode:
         parser.print_help()
         print("Please provide a mode!")
         sys.exit(1)
 
+    # Decide on action based on provided arguments
     if args.mode == 'gain_calc':
         audioFixer.gain()
     elif args.mode == 'louden':

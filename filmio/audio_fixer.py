@@ -133,7 +133,8 @@ class AudioFixer:
 
     def extractAudioFromVideo(self):
         '''
-        TODO
+        Sets the audio property on each of the videoFiles
+        Extracts the audio track for each video file
         '''
         print("Extracting audio for each video file...")
         for video_tup in self.videoFiles():
@@ -152,7 +153,8 @@ class AudioFixer:
 
     def matchVideoToAudio(self):
         '''
-        TODO
+        Sets the matches array
+        Find the best audio match for each video file, along with start/stop times and score
         '''
         if not self._video_audio_extracted:
             self.extractAudioFromVideo()
@@ -193,7 +195,8 @@ class AudioFixer:
 
     def patch(self):
         '''
-        TODO
+        First run the matching
+        Then, for each video file, create a trimmed copy of the best matching audio and attach to a new copy of the video
         '''
         self.matchVideoToAudio()
 

@@ -1,11 +1,3 @@
 - option to clean up temporary files (default should be true)
 - unit tests
-- nice neat executable (setuptools)
-    - https://packaging.python.org/tutorials/packaging-projects
-    - readme
-    - make sure that praat script is included in package
-    - Praat
-        - could include in package - https://python-packaging.readthedocs.io/en/latest/non-code-files.html
-        - or could set dependency - https://python-packaging.readthedocs.io/en/latest/dependencies.html
-    - test install - python setup.py develop
-    - test with TestPyPI
+- trim option

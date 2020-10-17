@@ -116,7 +116,6 @@ def louder(audio_file, new_audio_file, scale):
 # Extract the audio of the given video file and place in output_audio_file
 # Return True for success and False for failure
 def extract_audio(video_file, output_audio_file):
-    # TODO: should we do 32 bit instead?
     cmd = ['ffmpeg', '-i', video_file, '-map', '0:1', '-acodec', 'pcm_s16le', '-ar', '44100', '-ac', '2', '-y', output_audio_file]
     rc = subprocess.call(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     return rc == 0

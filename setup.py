@@ -8,7 +8,7 @@ setuptools.setup(
     version="0.0.1",
     author="Alexander Scarlatos",
     author_email="ajscarlatos@gmail.com",
-    description="A utility for syncing video to source audio, perhaps for your films",
+    description="Find the best audio tracks to match your videos, perhaps for your films.",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/alexscarlatos/filmio",
@@ -18,7 +18,7 @@ setuptools.setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
-    python_requires='>=3.6', # TODO: test with 3.6
+    python_requires='>=3.7',
     install_requires=[
         'wavio',
         'scipy',

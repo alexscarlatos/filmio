@@ -3,4 +3,8 @@ __pycache__
 *.MP4
 *.m4a
 *.egg-info
+*.pdf
+*.pypirc
 .vscode/
+build/
+dist
