@@ -2,6 +2,7 @@ __pycache__
 *.wav
 *.MP4
 *.m4a
+*.mov
 *.egg-info
 *.pdf
 *.pypirc

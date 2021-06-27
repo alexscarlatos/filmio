@@ -1,12 +1,15 @@
 from os import listdir, path, makedirs
 from .audio_util import get_max_gain, louder, extract_audio, match, trim, attach, MatchTuple
 
-def get_all_files_of_type_in_list(file_list, ext):
-    return [f for f in file_list if f.lower().endswith(ext.lower())]
+AUDIO_FILE_EXTS = ['.wav']
+VID_FILE_EXTS = ['.mp4', '.mov']
 
-def get_all_files_of_type_in_dir(cur_dir, ext):
+def get_all_files_of_type_in_list(file_list, ext_list):
+    return [f for f in file_list if any(f.lower().endswith(ext.lower()) for ext in ext_list)]
+
+def get_all_files_of_type_in_dir(cur_dir, ext_list):
     file_list = (path.join(cur_dir, f) for f in listdir(cur_dir) if path.isfile(path.join(cur_dir, f)))
-    return get_all_files_of_type_in_list(file_list, ext)
+    return get_all_files_of_type_in_list(file_list, ext_list)
 
 def get_out_file_path(input_file, out_dir, suffix='', new_type=None):
     input_file_parts = path.basename(input_file).rsplit('.', 1)
@@ -16,12 +19,10 @@ def get_out_file_path(input_file, out_dir, suffix='', new_type=None):
 # Encapsulates all core functionality of the application
 # Tried to make it only do things when it has to, so any piece can be used independently
 class AudioFixer:
-    def __init__(self, source_dir, out_dir, verbose):
-        self.source_dir = source_dir
-        makedirs(out_dir, exist_ok=True) # Create out_dir if it doesn't already exist
-        self.out_dir = out_dir
+    def __init__(self, verbose):
         self.verbose = verbose
-
+        self.source_dir = None
+        self.out_dir = None
         self._src_audio_files = None
         self._new_audio_files = None
         self._video_files = None
@@ -34,17 +35,24 @@ class AudioFixer:
         # List of tuples (audio_file, video_file)
         self._matches_trimmed = None
 
+    def setSourceDir(self, source_dir):
+        self.source_dir = source_dir
+
+    def setOutputDir(self, out_dir):
+        makedirs(out_dir, exist_ok=True) # Create out_dir if it doesn't already exist
+        self.out_dir = out_dir
+
     def overrideSrcAudioFiles(self, audio_files):
         '''
         Set the list of source audio files to use rather than calculate it
         '''
-        self._src_audio_files = get_all_files_of_type_in_list(audio_files, '.wav')
+        self._src_audio_files = get_all_files_of_type_in_list(audio_files, AUDIO_FILE_EXTS)
 
     def overrideSrcVideoFiles(self, video_files):
         '''
         Set the list of source video files to use rather than calculate it
         '''
-        self._video_files = [{'video': f} for f in get_all_files_of_type_in_list(video_files, '.mp4')]
+        self._video_files = [{'video': f} for f in get_all_files_of_type_in_list(video_files, VID_FILE_EXTS)]
 
     def overrideGain(self, gain):
         '''
@@ -61,7 +69,7 @@ class AudioFixer:
             return self._src_audio_files
 
         print("Gathering audio files...")
-        self._src_audio_files = get_all_files_of_type_in_dir(self.source_dir, '.wav')
+        self._src_audio_files = get_all_files_of_type_in_dir(self.source_dir, AUDIO_FILE_EXTS)
         return self._src_audio_files
 
     def newAudioFiles(self):
@@ -84,7 +92,7 @@ class AudioFixer:
             return self._video_files
 
         print("Gathering video files...")
-        self._video_files = [{'video': f} for f in get_all_files_of_type_in_dir(self.source_dir, '.mp4')]
+        self._video_files = [{'video': f} for f in get_all_files_of_type_in_dir(self.source_dir, VID_FILE_EXTS)]
         return self._video_files
 
     def gain(self):

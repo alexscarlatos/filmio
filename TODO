@@ -1,3 +1,4 @@
+- apply audio loudening to video files when -l is used
 - option to clean up temporary files (default should be true)
 - unit tests
 - trim option

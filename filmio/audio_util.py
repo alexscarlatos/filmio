@@ -1,7 +1,7 @@
 from os import path
 from collections import namedtuple
 from functools import partial
-import subprocess
+from subprocess import Popen, PIPE
 from wave import Error as WavError
 import numpy as np
 from scipy.io import wavfile
@@ -116,9 +116,20 @@ def louder(audio_file, new_audio_file, scale):
 # Extract the audio of the given video file and place in output_audio_file
 # Return True for success and False for failure
 def extract_audio(video_file, output_audio_file):
-    cmd = ['ffmpeg', '-i', video_file, '-map', '0:1', '-acodec', 'pcm_s16le', '-ar', '44100', '-ac', '2', '-y', output_audio_file]
-    rc = subprocess.call(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    return rc == 0
+    cmd = [
+        'ffmpeg',
+        '-i', video_file,
+        '-map', '0:a', # Select audio stream from first input
+        '-acodec', 'pcm_s16le', # Encode output audio as default wav format (signed 16 bit little endian)
+        '-ar', '44100', # Set output sampling frequency to 44100 samples per second
+        '-y', # Don't ask for confirmation
+        output_audio_file
+    ]
+    proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
+    _, err = proc.communicate()
+    if proc.returncode != 0:
+        print(err)
+    return proc.returncode == 0
 
 # TODO: cache results of this function
 def get_audio_len(audio_file):
@@ -198,10 +209,16 @@ def attach(audio_file, video_file, output_video_file):
         'ffmpeg',
         '-i', video_file,
         '-i', audio_file,
-        '-map', '0:v',
-        '-map', '1:a',
-        '-vcodec', 'copy',
-        '-shortest', '-y', output_video_file
+        '-map', '0:v', # Take video stream from first input
+        '-map', '1:a', # Take audio stream from second input
+        '-vcodec', 'copy', # Copy the video codec from the source for the output
+        # Use default audio codec instead of copying to avoid error
+        '-shortest', # The output length is the shortest of the video/audio streams
+        '-y', # Don't ask for confirmation
+        output_video_file
     ]
-    rc = subprocess.call(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    return rc == 0
+    proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
+    _, err = proc.communicate()
+    if proc.returncode != 0:
+        print(err)
+    return proc.returncode == 0
