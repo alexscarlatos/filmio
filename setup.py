@@ -13,7 +13,7 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/alexscarlatos/filmio",
     packages=setuptools.find_packages(),
-    package_data={'': ['cross_correlate.praat']},
+    package_data={'': ['cross_correlate.praat', 'filmio.command']},
     include_package_data=True,
     classifiers=[
         "Programming Language :: Python :: 3",

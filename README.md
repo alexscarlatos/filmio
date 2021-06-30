@@ -6,9 +6,22 @@ It does this by comparing the audio tracks of each video file with the external 
 The audio is trimmed, gained to its highest possible volume, and patched onto a new copy of the video.
 It will be as if the recording was done on a single device!
 
+## Installation
+- Prerequisites
+  - You will need python3.7 or higher https://www.python.org/downloads/
+  - You will need ffmpeg as well https://www.ffmpeg.org/
+- After installing the above, simply clone this repo, and then run `python3 setup.py install` in the top level of the repo.
+
 ## Usage
+
+### Launch the GUI
+If you're on Mac, you can launch the GUI by double clicking `filmio/filmio.command`.  
+This is just a shortcut that is equivalent to running `python3 -m filmio --gui` on the command line.
+
+### Command Line Arguments
 ```
 -h, --help          show this help message and exit
+--gui               Use a GUI instead of command line to configure the run
 -v, --verbose       Print extra information while executing.
 -d SRC_DIR, --src_dir SRC_DIR
                     Directory to search for source files. Default is the
