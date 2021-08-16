@@ -2,6 +2,7 @@ from os import path
 from collections import namedtuple
 from functools import partial
 from subprocess import Popen, PIPE
+from cachetools import cached
 from wave import Error as WavError
 import numpy as np
 from scipy.io import wavfile
@@ -14,6 +15,8 @@ FLOAT_SAMPWIDTH = -1
 #    that would correspond to the true start and end time of a video file
 #  a score that is higher with a better match (should be a percentage for comparison purposes)
 MatchTuple = namedtuple('MatchTuple', ['start_time', 'end_time', 'score'])
+
+WavMetaData = namedtuple('WavMetaData', ['length', 'rate'])
 
 def dtype_to_sampwidth(dtype):
     if str(dtype).startswith('float'):
@@ -45,6 +48,13 @@ def read_wav_file(wav_file):
     except Exception as e:
         print("\tERR: Couldn't read data: {}".format(e))
         return None
+
+@cached(cache={})
+def get_wav_metadata(audio_file):
+    wav_data = read_wav_file(audio_file)
+    if not wav_data:
+        return None
+    return WavMetaData(len(wav_data.data) / float(wav_data.rate), wav_data.rate)
 
 # Get the maximum amount that a audio file's samples may be scaled by
 # Such that the result will not peak
@@ -115,13 +125,13 @@ def louder(audio_file, new_audio_file, scale):
 
 # Extract the audio of the given video file and place in output_audio_file
 # Return True for success and False for failure
-def extract_audio(video_file, output_audio_file):
+def extract_audio(video_file, output_audio_file, output_samp_freq):
     cmd = [
         'ffmpeg',
         '-i', video_file,
         '-map', '0:a', # Select audio stream from first input
         '-acodec', 'pcm_s16le', # Encode output audio as default wav format (signed 16 bit little endian)
-        '-ar', '44100', # Set output sampling frequency to 44100 samples per second
+        '-ar', output_samp_freq, # Set output sampling frequency
         '-y', # Don't ask for confirmation
         output_audio_file
     ]
@@ -131,20 +141,12 @@ def extract_audio(video_file, output_audio_file):
         print(err)
     return proc.returncode == 0
 
-# TODO: cache results of this function
-def get_audio_len(audio_file):
-    wav_data = read_wav_file(audio_file)
-    if not wav_data:
-        return None
-
-    return len(wav_data.data) / float(wav_data.rate)
-
 # Match the separate audio with the audio from the video
 # Return MatchTuple
 def match(ext_audio_file, video_audio_file):
     # Call Praat to do the matching
     praat_path = path.join(path.dirname(__file__), 'cross_correlate.praat')
-    out_str = parselmouth.praat.run_file(praat_path, video_audio_file, ext_audio_file, 0, 60, capture_output=True)[1]
+    out_str = parselmouth.praat.run_file(praat_path, video_audio_file, ext_audio_file, capture_output=True)[1]
 
     # Get offset and score from process output
     try:
@@ -155,13 +157,13 @@ def match(ext_audio_file, video_audio_file):
         print('Error parsing Praat output:', e)
         return None
 
-    vid_audio_len = get_audio_len(video_audio_file)
+    vid_audio_len = get_wav_metadata(video_audio_file).length
 
     start_time = offset
     end_time = start_time + vid_audio_len
 
     # Scoring heuristic - if a large part of the video is left silent, it is likely not matched correctly
-    ext_audio_len = get_audio_len(ext_audio_file)
+    ext_audio_len = get_wav_metadata(ext_audio_file).length
     silence_time = max(-1 * start_time, 0) + max(end_time - ext_audio_len, 0)
     silence_ratio = float(silence_time) / vid_audio_len
 
@@ -210,6 +212,8 @@ def attach(audio_file, video_file, output_video_file):
         '-i', video_file,
         '-i', audio_file,
         '-map', '0:v', # Take video stream from first input
+        '-map_metadata', '0', # Take metadata from first input
+        '-movflags', 'use_metadata_tags', # Keep .mov metadata
         '-map', '1:a', # Take audio stream from second input
         '-vcodec', 'copy', # Copy the video codec from the source for the output
         # Use default audio codec instead of copying to avoid error

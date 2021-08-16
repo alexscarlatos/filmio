@@ -26,7 +26,8 @@ setuptools.setup(
         'scipy',
         'numpy',
         'pylint',
-        'praat-parselmouth'
+        'praat-parselmouth',
+        'cachetools'
     ],
     entry_points = {
         'console_scripts': ['filmio=filmio.__main__:main'],

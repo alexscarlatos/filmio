@@ -1,10 +1,23 @@
 import argparse
 import sys
-from .audio_fixer import AudioFixer
+from .audio_fixer import AudioFixer, Modes, DEFAULT_SOURCE_DIR, DEFAULT_OUTPUT_DIR
 from .gui import create_gui
 
-def process_cmd_line(audioFixer, args, parser):
+OPTION_TO_MODE = {
+    'louden': Modes.LOUDEN,
+    'extract_vid_audio': Modes.EXTRACT,
+    'match': Modes.MATCH,
+    'patch': Modes.PATCH,
+}
+
+def process_cmd_line(args, parser):
+    # Create worker class
+    audioFixer = AudioFixer(args.verbose)
+    audioFixer.setMode(OPTION_TO_MODE.get(args.mode, Modes.OTHER))
+
     # Set overrides
+    audioFixer.setSourceDir(args.src_dir)
+    audioFixer.setOutputDir(args.out_dir)
     if args.gain is not None:
         audioFixer.overrideGain(args.gain)
     if args.files is not None:
@@ -27,6 +40,7 @@ def process_cmd_line(audioFixer, args, parser):
         audioFixer.matchVideoToAudio()
     elif args.mode == 'patch':
         audioFixer.patch()
+    audioFixer.cleanup()
 
 def main():
     parser = argparse.ArgumentParser(description='A super rad utility to help you with audio for your films')
@@ -34,9 +48,9 @@ def main():
 
     parser.add_argument('-v', '--verbose', action='store_true',
         help='Print extra information while executing.')
-    parser.add_argument('-d', '--src_dir', default='.',
+    parser.add_argument('-d', '--src_dir', default=DEFAULT_SOURCE_DIR,
         help='Directory to search for source files. Default is the current directory.')
-    parser.add_argument('-o', '--out_dir', default='./Fixed',
+    parser.add_argument('-o', '--out_dir', default=DEFAULT_OUTPUT_DIR,
         help='Directory to place output files. Default is subdir of the current directory "./Fixed"')
 
     parser.add_argument('-m', '--mode', choices=['gain_calc', 'louden', 'extract_vid_audio', 'match', 'patch'])
@@ -49,16 +63,11 @@ def main():
 
     args = parser.parse_args()
 
-    # Create worker class
-    audioFixer = AudioFixer(args.verbose or args.gui)
-    audioFixer.setSourceDir(args.src_dir)
-    audioFixer.setOutputDir(args.out_dir)
-
     # Either create GUI or process cmd line args
     if args.gui:
-        create_gui(audioFixer)
+        create_gui()
     else:
-        process_cmd_line(audioFixer, args, parser)
+        process_cmd_line(args, parser)
 
     print("All done!")
 

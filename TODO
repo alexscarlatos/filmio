@@ -1,4 +1,5 @@
-- apply audio loudening to video files when -l is used
-- option to clean up temporary files (default should be true)
+- get ffmpeg to not be choppy for video output
+- clear cache after each run
+- option to louden extracted video audio
 - unit tests
-- trim option
+- type checking

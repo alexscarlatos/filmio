@@ -1,6 +1,6 @@
 from tkinter import Tk, Frame, BOTH, Button, Text, Entry, END, NORMAL, DISABLED, filedialog
 import os
-from .audio_fixer import VID_FILE_EXTS, AUDIO_FILE_EXTS
+from .audio_fixer import AudioFixer, Modes, DEFAULT_SOURCE_DIR, DEFAULT_OUTPUT_DIR, VID_FILE_EXTS, AUDIO_FILE_EXTS
 
 def updateText(item, new_text):
     item.configure(state=NORMAL)
@@ -9,25 +9,33 @@ def updateText(item, new_text):
     item.configure(state=DISABLED)
 
 class Window(Frame):
-    def __init__(self, master, audioFixer):
+    def __init__(self, master):
         Frame.__init__(self, master)
-
-        self.audioFixer = audioFixer
 
         # Let widget take up whole window
         self.pack(fill=BOTH, expand=1)
 
         self.items = []
+        self.setup()
+
+    def setup(self):
+        # Create worker class
+        self.audioFixer = AudioFixer(True)
+        self.audioFixer.setSourceDir(DEFAULT_SOURCE_DIR)
+        self.audioFixer.setOutputDir(DEFAULT_OUTPUT_DIR)
+
+        # Clear the screen
+        self.destroyEverything()
 
         # Create interface
         self.createText(x=0, y=0, text="First select your source video/audio files, either by parent folder or pick the files individually")
         self.createButton(x=0, y=20, text="Source Folder", command=self.setSourceDir)
         self.createButton(x=100, y=20, text="Source Files", command=self.setSourceFiles)
-        self.srcDisplay = self.createText(x=0, y=40, text=f"Source: {os.path.realpath(audioFixer.source_dir)}")
+        self.srcDisplay = self.createText(x=0, y=40, text=f"Source: {os.path.realpath(self.audioFixer.source_dir)}")
 
         self.createText(x=0, y=80, text="Select the folder where the resulting files should be placed")
         self.createButton(x=0, y=100, text="Output Folder", command=self.setOutputDir)
-        self.outputDisplay = self.createText(x=0, y=120, text=f"Output location: {os.path.realpath(audioFixer.out_dir)}")
+        self.outputDisplay = self.createText(x=0, y=120, text=f"Output location: {os.path.realpath(self.audioFixer.out_dir)}")
 
         self.gainOverride = Entry(self, width=8)
         self.gainOverride.place(x=0, y=160)
@@ -35,11 +43,11 @@ class Window(Frame):
         self.createText(x=90, y=160, text="Select a gain multiplier; if not set, will be calculated to maximize volume")
 
         self.createText(x=0, y=200, text="Choose one of the following options:")
-        self.createButton(x=0, y=220, text="Calculate Gain", command=self.run(audioFixer.gain))
-        self.createButton(x=0, y=245, text="Louden Source Audio", command=self.run(audioFixer.loudenAudio))
-        self.createButton(x=0, y=270, text="Extract Audio from Video", command=self.run(audioFixer.extractAudioFromVideo))
-        self.createButton(x=0, y=295, text="Calculate Video/Source Audio Matches", command=self.run(audioFixer.matchVideoToAudio))
-        self.createButton(x=0, y=320, text="Patch Source Audio onto Videos", command=self.run(audioFixer.patch))
+        self.createButton(x=0, y=220, text="Calculate Gain", command=self.run(self.audioFixer.gain, Modes.OTHER))
+        self.createButton(x=0, y=245, text="Louden Source Audio", command=self.run(self.audioFixer.loudenAudio, Modes.LOUDEN))
+        self.createButton(x=0, y=270, text="Extract Audio from Video", command=self.run(self.audioFixer.extractAudioFromVideo, Modes.EXTRACT))
+        self.createButton(x=0, y=295, text="Match Video with Source Audio", command=self.run(self.audioFixer.matchVideoToAudio, Modes.MATCH))
+        self.createButton(x=0, y=320, text="Patch Source Audio onto Videos", command=self.run(self.audioFixer.patch, Modes.PATCH))
 
     def createText(self, x, y, text):
         item = Text(self, height=1, width=100)
@@ -82,7 +90,7 @@ class Window(Frame):
         for item in self.items:
             item.destroy()
 
-    def run(self, execute):
+    def run(self, execute, mode):
         def execute_job():
             # Set gain override if provided
             try:
@@ -92,17 +100,20 @@ class Window(Frame):
             except ValueError as exc:
                 print(exc)
 
+            self.audioFixer.setMode(mode)
             execute()
+            self.audioFixer.cleanup()
 
             self.destroyEverything()
             self.createText(x=0, y=0, text="Done!")
             self.createText(x=0, y=20, text="Examine console output for results")
+            self.createButton(x=0, y=60, text="Restart", command=self.setup)
 
         return execute_job
 
-def create_gui(audioFixer):
+def create_gui():
     root = Tk()
-    Window(root, audioFixer)
+    Window(root)
     root.wm_title("filmio")
     root.geometry("800x400")
     root.mainloop()
